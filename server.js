@@ -34,5 +34,8 @@ io.on('connection', socket => {
     let rooms = JSON.parse(data)
     socket.to(room).broadcast.emit('chat-message', { message: message, name: rooms[room].users[socket.id] })
   })
+  socket.on('connect_error', err => console.log(err))
+  socket.on('connect_failed', err => console.log(err))
+  socket.on('disconnect', err => console.log(err))
 })
 

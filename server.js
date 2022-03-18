@@ -1,49 +1,25 @@
 const express = require('express')
 const app = express()
 const server = require('http').Server(app)
-const io = require('socket.io')(server);
-const redisClient  = require('./redisClient/redis')
+const io = require('./socket.js').init(server);
+const redisClient  = require('./redisClient/redis');
+const {homeController, roomsController, roomController} = require('./controllers/controller.js');
+const errorHandler = require('./middlewares/errorHandler');
 
 app.set('views', './views')
 app.set('view engine', 'ejs')
-app.use(express.static('utils'))
-app.use(express.urlencoded({ extended: true }))
+app.use(express.static('public'))
+app.use(express.urlencoded({ extended: true }));
+server.listen(3000);
 
-app.get('/', async(req, res) => {
-  let data = await redisClient.get('msg');
-  let rooms = JSON.parse(data)
-  res.render('index', { rooms: rooms })
-})
+app.get('/', homeController);
 
-app.post('/room', async (req, res) => {
-  let data = await redisClient.get('msg');
-    let rooms = JSON.parse(data)
-  if (rooms[req.body.room] != null) {
-    return res.redirect('/')
-  }
-  rooms[req.body.room] = { users: {} };
-  
-  await redisClient.set('msg', JSON.stringify(rooms));
- 
-  
-  res.redirect(req.body.room)
-  io.emit('room-created', req.body.room)
-})
+app.post('/room', roomsController);
 
-app.get('/:room', async(req, res) => {
-  let data = await redisClient.get('msg');
-  let rooms = JSON.parse(data)
-  if (rooms[req.params.room] == null) {
-    return res.redirect('/')
-  }
-  res.render('room', { roomName: req.params.room })
-})
+app.get('/:room', roomController);
 
-app.use((err, req, res, next) => {
-  res.status(500).send("Something went wrong");
-})
+app.use(errorHandler);
 
-server.listen(3000)
 io.on('connection', socket => {
   socket.on('new-user', async(room, name) => {
     let data = await redisClient.get('msg');

@@ -1,5 +1,4 @@
 const redis = require('redis');
-//const redisClient = redis.createClient();
 let redisClient;
 (async () => {
   redisClient = redis.createClient();
